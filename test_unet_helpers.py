@@ -417,14 +417,17 @@ class DigitalGlobeSamplerTensor(Dataset):
         
         elif self.comb=='bgrn' and self.transform and self.transform.transforms[0].mean.__len__()==4:
             
-            img_arr = np.rollaxis(img_arr, 0,3)
-            img_arr = img_arr[:,:,self.bgrn]
-            img_arr = self.transform(img_arr)
-            return img_arr[self.bgrn.reverse(), :, :]
+            #img_arr = np.rollaxis(img_arr, 0,3)
+            #img_arr = img_arr[:,:,self.bgrn]
+            
+            img_arr = img_arr[self.bgrn,:,:]
+            
+            img_arr = self.transform(torch.from_numpy(img_arr))
+            return img_arr
         
         else:
-            print('here')
-            return torch.from_numpy(img_arr)
+#             print('here')
+            return self.transform(torch.from_numpy(img_arr))
     
     def __len__(self):
         return len(self.coords)
