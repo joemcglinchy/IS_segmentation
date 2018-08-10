@@ -101,14 +101,20 @@ class UNet11_MS(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
 
         self.encoder = models.vgg11(pretrained=pretrained).features
-
         self.relu = self.encoder[1]
+        
+        # change the encoder[0] to support many bands
+        self.encoder[0] = nn.Sequential(nn.Conv2d(num_bands, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)))
+
+        
         
         # changed this one
         print('num_bands is ', num_bands)
         self.conv1 = nn.Sequential(nn.Conv2d(num_bands, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)), # support for multiple bands
                                    self.relu)
         
+        self.relu = self.encoder[1]
+        self.conv1 = self.encoder[0]
         self.conv2 = self.encoder[3]
         self.conv3s = self.encoder[6]
         self.conv3 = self.encoder[8]
@@ -116,7 +122,6 @@ class UNet11_MS(nn.Module):
         self.conv4 = self.encoder[13]
         self.conv5s = self.encoder[16]
         self.conv5 = self.encoder[18]
-
         self.center = DecoderBlock(num_filters * 8 * 2, num_filters * 8 * 2, num_filters * 8)
         self.dec5 = DecoderBlock(num_filters * (16 + 8), num_filters * 8 * 2, num_filters * 8)
         self.dec4 = DecoderBlock(num_filters * (16 + 8), num_filters * 8 * 2, num_filters * 4)
