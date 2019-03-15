@@ -22,6 +22,41 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import random
 from math import log10
+from collections import OrderedDict
+
+def load_pretrained_weights(model, weight_path):
+    """Load pretrianed weights to model
+    Incompatible layers (unmatched in name or size) will be ignored
+    Args:
+    - model (nn.Module): network model, which must not be nn.DataParallel
+    - weight_path (str): path to pretrained weights
+    """
+    checkpoint = torch.load(weight_path)
+    if 'state_dict' in checkpoint:
+        state_dict = checkpoint['state_dict']
+    else:
+        state_dict = checkpoint
+    model_dict = model.state_dict()
+    new_state_dict = OrderedDict()
+    matched_layers, discarded_layers = [], []
+    for k, v in state_dict.items():
+        # If the pretrained state_dict was saved as nn.DataParallel,
+        # keys would contain "module.", which should be ignored.
+        if k.startswith('module.'):
+            k = k[7:]
+        if k in model_dict and model_dict[k].size() == v.size():
+            new_state_dict[k] = v
+            matched_layers.append(k)
+        else:
+            discarded_layers.append(k)
+    model_dict.update(new_state_dict)
+    model.load_state_dict(model_dict)
+    if len(matched_layers) == 0:
+        print('** ERROR: the pretrained weights "{}" cannot be loaded, please check the key names manually (ignored and continue)'.format(weight_path))
+    else:
+        print('Successfully loaded pretrained weights from "{}"'.format(weight_path))
+        if len(discarded_layers) > 0:
+            print("* The following layers are discarded due to unmatched keys or layer size: {}".format(discarded_layers))
 
 # convert bounding boxes into string required for DG CatalogImage
 # ex. bbox = [-110.85299491882326,32.167148499672855,-110.84870338439943,32.170236308395644] WGS84
